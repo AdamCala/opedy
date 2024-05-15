@@ -4,14 +4,14 @@ services:
     ports:
       - "5173:5173"
     depends_on:
-      - backend
+      - ftp-server
 
-  backend:
+  ftp-server:
     build: ./backend
     ports:
-      - "3000:3000"
+      - "21:21"
+      - "5000:5000"
     volumes:
-      - ./videos:/resources/videos
       - db-data:/backend/db
 
 volumes:

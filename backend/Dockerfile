@@ -1,16 +1,30 @@
-FROM node:18-alpine
+FROM python:3.9
 
-RUN apk add --no-cache sqlite
+# Install required packages
+RUN pip install pyftpdlib flask flask-cors
 
-WORKDIR /backend/
+# Set up FTP server
+RUN mkdir /ftp
+RUN echo "from pyftpdlib.authorizers import DummyAuthorizer\n\
+from pyftpdlib.handlers import FTPHandler\n\
+from pyftpdlib.servers import FTPServer\n\
+\n\
+authorizer = DummyAuthorizer()\n\
+authorizer.add_anonymous('/ftp')\n\
+handler = FTPHandler\n\
+handler.authorizer = authorizer\n\
+server = FTPServer(('0.0.0.0', 21), handler)\n\
+server.serve_forever()" > /ftp/server.py
 
-COPY package.json ./
-RUN npm install
-COPY /src ./src
-COPY tsconfig.json ./tsconfig.json
-COPY ./init.sql ./
-COPY init-db.sh ./
-COPY /videos /resources/videos
-EXPOSE 3000
-# CMD tail -f /dev/null
-CMD ["sh", "-c", "./init-db.sh && npx ts-node src/index.ts"]
+# Copy videos directory
+COPY videos /ftp/videos
+
+# Set up API server
+WORKDIR /app
+COPY api.py /app
+
+# Expose ports for FTP and API
+EXPOSE 21 5000
+
+# Run both servers
+CMD python /ftp/server.py & python /app/api.py

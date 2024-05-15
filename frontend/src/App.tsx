@@ -13,7 +13,7 @@ import Player from './components/Player';
 
     const fetchVideo = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/random-video/cat3');
+        const response = await fetch('http://localhost:5000/videos/random/cat3');
         if (response.ok) {
           console.log('ok')
           const data = await response.json();
@@ -30,10 +30,14 @@ import Player from './components/Player';
 
     const fetchVideoList = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/video-list');
+        const response = await fetch('http://localhost:5000/videos');
         if (response.ok) {
           const data = await response.json();
-          setVideoList(data);
+          const videoArray = Object.keys(data).map((category) => ({
+            category,
+            videos: data[category],
+          }));
+          setVideoList(videoArray);
         } else {
           console.error('Failed to fetch video list:', response.statusText);
         }
@@ -43,7 +47,7 @@ import Player from './components/Player';
     };
 
     const playVideo = (category: string, video: string) => {
-      const videoUrl = `http://localhost:3000/videos/${category}/${video}`;
+      const videoUrl = `http://localhost:5000/videos/${category}/${video}`;
       setVideoUrl(videoUrl);
     };
 

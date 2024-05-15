@@ -1,1 +1,0 @@
-sqlite3 /backend/db/scoreboard.db < /backend/init.sql
