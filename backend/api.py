@@ -19,6 +19,11 @@ def list_videos():
         videos[category] = os.listdir(os.path.join(VIDEO_DIR, category))
     return jsonify(videos)
 
+@app.route('/videos/categories')
+def list_categories():
+    categories = os.listdir(VIDEO_DIR)
+    return jsonify(categories)
+
 @app.route('/videos/random/<category>')
 def random_video(category):
     videos = os.listdir(os.path.join(VIDEO_DIR, category))
