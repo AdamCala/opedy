@@ -8,7 +8,7 @@ const Player: React.FC<PlayerProps> = ({ videoUrl }) => {
   return (
     <>
       {videoUrl && (
-        <video width={200} autoPlay controls >
+        <video width={200} controls >
           <source src={`${videoUrl}?t=${Date.now()}`} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
