@@ -35,6 +35,12 @@ def initialize_database():
                  id INTEGER PRIMARY KEY AUTOINCREMENT,
                  username TEXT NOT NULL,
                  games_played INTEGER DEFAULT 0)''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS ops (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT UNIQUE NOT NULL,
+                successful_guesses INTEGER DEFAULT 0,
+                unsuccessful_guesses INTEGER DEFAULT 0)''')
 
     # Create tables for difficulty levels
     c.execute('''CREATE TABLE IF NOT EXISTS easy (
@@ -73,6 +79,7 @@ def add_score():
         playername = request.form['username']
         difficulty = request.form['difficulty']
         score = 1 if request.form.get('score', '0') == '1' else 0
+        op_name = request.form['op_name']  # Fetch op_name from the form data
         app.logger.info(f"Received data - Playername: {playername}, Difficulty: {difficulty}, Score: {score}")
         try:
             conn = sqlite3.connect(DATABASE_PATH)
@@ -97,6 +104,12 @@ def add_score():
             elif difficulty == 'hard':
                 c.execute("INSERT INTO hard (player_id, score) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET score=score+?", (player_id, score, score))
             
+            if score == 1:
+                c.execute("INSERT INTO ops (title, successful_guesses, unsuccessful_guesses) VALUES (?, 1, 0) ON CONFLICT(title) DO UPDATE SET successful_guesses=successful_guesses+1 WHERE title=?", (op_name, op_name))
+            else:
+                c.execute("INSERT INTO ops (title, successful_guesses, unsuccessful_guesses) VALUES (?, 0, 1) ON CONFLICT(title) DO UPDATE SET unsuccessful_guesses=unsuccessful_guesses+1 WHERE title=?", (op_name, op_name))
+            
+
             conn.commit()
             notify_score_update()
             return "Score added successfully!"
@@ -197,6 +210,22 @@ def get_video(category, video):
         return send_file(video_path, mimetype='video/mp4')
     else:
         return jsonify({"error": "Video not found"})
+    
+@app.route('/op_stats/<op_name>', methods=['GET'])
+def get_op_stats(op_name):
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        c = conn.cursor()
+        c.execute("SELECT successful_guesses, unsuccessful_guesses FROM ops WHERE title=?", (op_name,))
+        op_stats = c.fetchone()
+        if op_stats:
+            return jsonify({"successful_guesses": op_stats[0], "unsuccessful_guesses": op_stats[1]})
+        else:
+            return jsonify({"successful_guesses": 0, "unsuccessful_guesses": 0})
+    except sqlite3.Error as e:
+        return f"Error fetching op stats: {e}", 500
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000)

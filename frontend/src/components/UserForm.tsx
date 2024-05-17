@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function UserForm() {
+function UserForm({ currentOpName, currentDifficulty }: { currentOpName: string, currentDifficulty: string }) {
   const [username, setUsername] = useState<string>('');
   const [matchingUsernames, setMatchingUsernames] = useState<string[]>([]);
 
@@ -9,7 +9,7 @@ function UserForm() {
     setUsername(value);
 
     try {
-      const response = await fetch(`http://localhost:5000/autocomplete?username_prefix=${value}`);  
+      const response = await fetch(`http://localhost:5000/autocomplete?username_prefix=${value}`);
       if (response.ok) {
         const data = await response.json();
         setMatchingUsernames(data);
@@ -31,6 +31,7 @@ function UserForm() {
 
     try {
       const formData = new FormData(event.currentTarget);
+      formData.append('op_name', currentOpName); // Add op_name to the form data
       await fetch('http://localhost:5000/add_score', {
         method: 'POST',
         body: formData
@@ -58,11 +59,7 @@ function UserForm() {
         )}
         <br /><br />
         <label htmlFor="difficulty">Difficulty:</label>
-        <select id="difficulty" name="difficulty" required>
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
+        <input type="text" id="difficulty" name="difficulty" value={currentDifficulty} readOnly />
         <br /><br />
         <label htmlFor="score">Score:</label>
         <select id="score" name="score" required>
@@ -70,7 +67,7 @@ function UserForm() {
           <option value="0">No Point</option>
         </select>
         <br /><br />
-        <button type="submit">Add Score</button>
+        {currentOpName ? (<button type="submit">Add Score</button>) : (<button type="submit" disabled>Add Score</button>)}
       </form>
     </div>
   );
