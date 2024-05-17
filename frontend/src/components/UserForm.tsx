@@ -67,7 +67,7 @@ function UserForm({ currentOpName, currentDifficulty }: { currentOpName: string,
           <option value="0">No Point</option>
         </select>
         <br /><br />
-        {currentOpName ? (<button type="submit">Add Score</button>) : (<button type="submit" disabled>Add Score</button>)}
+        {currentOpName && username ? (<button type="submit">Add Score</button>) : (<button type="submit" disabled>Add Score</button>)}
       </form>
     </div>
   );
