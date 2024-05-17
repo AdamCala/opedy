@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
 
 interface Score {
   username: string;
@@ -15,32 +16,46 @@ const ScoreboardComponent: React.FC<{ difficulty: string }> = ({ difficulty }) =
   const [topPlayers, setTopPlayers] = useState<Player[]>([]);
 
   useEffect(() => {
-      fetchScoresFromServer();
-      fetchScoresFromServer();
-  }, []);
+    // Initialize WebSocket connection
+    const socket = io('http://localhost:5000');
+
+    // Fetch initial scores from the server
+    fetchScoresFromServer();
+
+    // Set up WebSocket event listener
+    socket.on('score_update', (data: any) => {
+      if (difficulty !== 'top-players') {
+        setScores(data[difficulty]);
+      } else {
+        setTopPlayers(data.top_players);
+      }
+    });
+
+    // Clean up WebSocket connection on component unmount
+    return () => {
+      socket.disconnect();
+    };
+  }, [difficulty]);
 
   const fetchScoresFromServer = () => {
-    // Fetch scores from the server based on the selected difficulty
     if (difficulty !== 'top-players') {
       fetch(`http://localhost:5000/events/${difficulty}-scores`)
         .then(response => response.json())
         .then((data: Score[]) => setScores(data))
         .catch(error => console.error('Error fetching scores:', error));
-        console.log(scores);
     } else {
-      // Fetch top players data
       fetchTopPlayersFromServer();
     }
   };
 
   const fetchTopPlayersFromServer = () => {
-    // Fetch top players from the server
     fetch('http://localhost:5000/events/top-players')
       .then(response => response.json())
       .then((data: Player[]) => setTopPlayers(data))
       .catch(error => console.error('Error fetching top players:', error));
   };
-return (
+
+  return (
     <div>
       {difficulty === 'top-players' ? (
         <div>

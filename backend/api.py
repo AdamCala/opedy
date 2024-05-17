@@ -1,5 +1,6 @@
 from flask import Flask, Response, jsonify, send_file, request, render_template
 from flask_cors import CORS, cross_origin
+from flask_socketio import SocketIO
 import os
 import random
 import sqlite3
@@ -9,8 +10,21 @@ import time
 app = Flask(__name__)
 CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 DATABASE_PATH = '/backend/db/games.db'
+
+def notify_score_update():
+    easy_scores = fetch_scores_from_db('easy')
+    medium_scores = fetch_scores_from_db('medium')
+    hard_scores = fetch_scores_from_db('hard')
+    top_players = fetch_top_players_from_db()
+    socketio.emit('score_update', {
+        'easy': easy_scores,
+        'medium': medium_scores,
+        'hard': hard_scores,
+        'top_players': top_players
+    })
 
 def initialize_database():
     conn = sqlite3.connect(DATABASE_PATH)
@@ -84,6 +98,7 @@ def add_score():
                 c.execute("INSERT INTO hard (player_id, score) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET score=score+?", (player_id, score, score))
             
             conn.commit()
+            notify_score_update()
             return "Score added successfully!"
         except sqlite3.Error as e:
             return f"Error adding score: {e}"
@@ -184,4 +199,4 @@ def get_video(category, video):
         return jsonify({"error": "Video not found"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=5000)

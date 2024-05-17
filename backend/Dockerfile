@@ -2,8 +2,8 @@ FROM python:3.9
 
 # Install required packages
 RUN apt-get update && apt-get install -y sqlite3 && rm -rf /var/lib/apt/lists/* \
-    && pip install pyftpdlib flask flask-cors
-
+    && pip install pyftpdlib flask flask-cors flask-socketio eventlet
+    
 # Set up FTP server
 RUN mkdir /ftp
 RUN echo "from pyftpdlib.authorizers import DummyAuthorizer\n\
