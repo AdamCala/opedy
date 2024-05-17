@@ -16,10 +16,10 @@ function App() {
   }, [videoUrl]);
 
   const playRandomVideo = async (category: string) => {
-    const videoUrl = await fetchRandomVideo(category);
-    if (videoUrl) {
-      setVideoUrl(videoUrl);
-      setNowPlaying({ category, video: 'Random Video' });
+    const videoData = await fetchRandomVideo(category);
+    if (videoData) {
+      setVideoUrl(videoData.url);
+      setNowPlaying({ category, video: videoData.name });
     }
   };
 
