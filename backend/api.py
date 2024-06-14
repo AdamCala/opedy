@@ -72,53 +72,71 @@ VIDEO_DIR = '/ftp/videos'
 def hello():
     return "Welcome to the video server API!"
 
-# Add a route to render the form
-@app.route('/add_score', methods=['GET', 'POST'])
-def add_score():
+@app.route('/add_scores', methods=['POST'])
+def add_scores():
     if request.method == 'POST':
-        playername = request.form['username']
+        op_name = request.form['op_name']
         difficulty = request.form['difficulty']
-        score = 1 if request.form.get('score', '0') == '1' else 0
-        op_name = request.form['op_name']  # Fetch op_name from the form data
-        app.logger.info(f"Received data - Playername: {playername}, Difficulty: {difficulty}, Score: {score}")
+
+        players = [
+            {
+                "username": request.form.get('username_1'),
+                "score": 1 if request.form.get('score_1', '0') == '1' else 0
+            },
+            {
+                "username": request.form.get('username_2'),
+                "score": 1 if request.form.get('score_2', '0') == '1' else 0
+            },
+            {
+                "username": request.form.get('username_3'),
+                "score": 1 if request.form.get('score_3', '0') == '1' else 0
+            }
+        ]
+
+        app.logger.info(f"Received data - Players: {players}, Difficulty: {difficulty}")
+
         try:
             conn = sqlite3.connect(DATABASE_PATH)
             c = conn.cursor()
-            
-            # Check if player exists
-            c.execute("SELECT id, games_played FROM player WHERE username=?", (playername,))
-            player_row = c.fetchone()
-            if player_row:
-                player_id, games_played = player_row
-                games_played += 1
-                c.execute("UPDATE player SET games_played=? WHERE id=?", (games_played, player_id))
-            else:
-                c.execute("INSERT INTO player (username, games_played) VALUES (?, ?)", (playername, 1))
-                player_id = c.lastrowid
-            
-            # Insert or update score into the appropriate table based on difficulty
-            if difficulty == 'easy':
-                c.execute("INSERT INTO easy (player_id, score) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET score=score+?", (player_id, score, score))
-            elif difficulty == 'medium':
-                c.execute("INSERT INTO medium (player_id, score) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET score=score+?", (player_id, score, score))
-            elif difficulty == 'hard':
-                c.execute("INSERT INTO hard (player_id, score) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET score=score+?", (player_id, score, score))
-            
-            if score == 1:
-                c.execute("INSERT INTO ops (title, successful_guesses, unsuccessful_guesses) VALUES (?, 1, 0) ON CONFLICT(title) DO UPDATE SET successful_guesses=successful_guesses+1 WHERE title=?", (op_name, op_name))
-            else:
-                c.execute("INSERT INTO ops (title, successful_guesses, unsuccessful_guesses) VALUES (?, 0, 1) ON CONFLICT(title) DO UPDATE SET unsuccessful_guesses=unsuccessful_guesses+1 WHERE title=?", (op_name, op_name))
-            
+
+            for player in players:
+                playername = player["username"]
+                score = player["score"]
+
+                # Check if player exists
+                c.execute("SELECT id, games_played FROM player WHERE username=?", (playername,))
+                player_row = c.fetchone()
+                if player_row:
+                    player_id, games_played = player_row
+                    games_played += 1
+                    c.execute("UPDATE player SET games_played=? WHERE id=?", (games_played, player_id))
+                else:
+                    c.execute("INSERT INTO player (username, games_played) VALUES (?, ?)", (playername, 1))
+                    player_id = c.lastrowid
+
+                # Insert or update score into the appropriate table based on difficulty
+                if difficulty == 'easy':
+                    c.execute("INSERT INTO easy (player_id, score) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET score=score+?", (player_id, score, score))
+                elif difficulty == 'medium':
+                    c.execute("INSERT INTO medium (player_id, score) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET score=score+?", (player_id, score, score))
+                elif difficulty == 'hard':
+                    c.execute("INSERT INTO hard (player_id, score) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET score=score+?", (player_id, score, score))
+
+                if score == 1:
+                    c.execute("INSERT INTO ops (title, successful_guesses, unsuccessful_guesses) VALUES (?, 1, 0) ON CONFLICT(title) DO UPDATE SET successful_guesses=successful_guesses+1 WHERE title=?", (op_name, op_name))
+                else:
+                    c.execute("INSERT INTO ops (title, successful_guesses, unsuccessful_guesses) VALUES (?, 0, 1) ON CONFLICT(title) DO UPDATE SET unsuccessful_guesses=unsuccessful_guesses+1 WHERE title=?", (op_name, op_name))
 
             conn.commit()
             notify_score_update()
-            return "Score added successfully!"
+            return "Scores added successfully!"
         except sqlite3.Error as e:
-            return f"Error adding score: {e}"
+            return f"Error adding scores: {e}"
         finally:
             conn.close()
     else:
-        return render_template('add_score.html')
+        return render_template('add_scores.html')
+
 
 @app.route('/autocomplete')
 def autocomplete():
